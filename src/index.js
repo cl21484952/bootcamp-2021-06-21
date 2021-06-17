@@ -1,17 +1,16 @@
 const express = require("express")
 const bodyparser = require("body-parser")
+const mysql = require("mysql2")
+
+const connection = mysql.createConnection({
+  host: "tmp-mysql-db",
+  user: "root",
+  password: null,
+})
 
 const app = express()
 app.use(bodyparser.json())
 const port = 3000
-
-// Keep track of note
-let currentNote = [
-  {
-    id: 1,
-    note: "My First note!",
-  },
-]
 
 // Endpoint
 app.get(
@@ -20,9 +19,13 @@ app.get(
   // Middleware
   (req, res) => {
     const httpCode = 200
-    const responseBody = currentNote
 
-    res.status(httpCode).json(responseBody)
+    connection.query(`SELECT * FROM note`, (error, results) => {
+      if (error) {
+        throw error
+      }
+      res.status(httpCode).json(results)
+    })
   },
 )
 
@@ -33,14 +36,17 @@ app.get("/notepad/:id", (req, res) => {
   // - If not found, return HTTP Code 404 and "Not Found"
   // - Return HTTP Code 200 and the note if found
   const noteId = parseInt(req.params.id)
-  const foundNote = currentNote.find((note) => {
-    return note.id === noteId
+
+  connection.query(`SELECT * FROM note WHERE id = ${noteId}`, (error, results) => {
+    if (error) {
+      throw error
+    }
+    if (results.length === 0) {
+      res.status(404).send("Not Found")
+      return
+    }
+    res.status(200).json(results[0])
   })
-  if (!foundNote) {
-    res.status(404).send("Not Found")
-    return
-  }
-  res.status(200).json(foundNote)
 })
 
 app.post("/notepad", (req, res) => {
@@ -56,17 +62,16 @@ app.post("/notepad", (req, res) => {
     res.status(400).send("Missing body property <note>!")
     return
   }
-  if (!(rawJson.note instanceof String)) {
+  if (!(typeof rawJson.note === "string")) {
     res.status(400).send("note property is not string!")
     return
   }
-  const noteObj = {
-    id: Math.floor(Math.random() * 2 ** 31),
-    note: rawJson.note,
-  }
-  currentNote.push(noteObj)
-
-  res.status(201).send("OK")
+  connection.query(`INSERT INTO note (note) VALUES ('${rawJson.note}')`, (error, results) => {
+    if (error) {
+      throw error
+    }
+    res.status(201).send("OK")
+  })
 })
 
 // Task 3: Delete note from currentNote
@@ -79,18 +84,21 @@ app.post("/notepad", (req, res) => {
 app.delete("/notepad/:id", (req, res) => {
   const noteId = parseInt(req.params.id)
 
-  const foundNote = currentNote.find((note) => {
-    return note.id === noteId
+  connection.query(`SELECT * FROM note WHERE id = ${noteId}`, (error, results) => {
+    if (error) {
+      throw error
+    }
+    if (results.length === 0) {
+      res.status(404).send("Not Found")
+      return
+    }
+    connection.query(`DELETE FROM note WHERE id = ${noteId}`, (error) => {
+      if (error) {
+        throw error
+      }
+      res.status(200).send("OK")
+    })
   })
-  if (!foundNote) {
-    res.status(404).send("No such Note!")
-    return
-  }
-
-  currentNote = currentNote.filter((note) => {
-    return note.id !== noteId
-  })
-  res.status(200).send("OK")
 })
 
 // Task 4: clear all notes
@@ -100,10 +108,42 @@ app.delete("/notepad/:id", (req, res) => {
 // - HTTP Method: DELETE
 // - HTTP Code 200 when currentNote is set to empty list
 app.delete("/notepad/:id", (req, res) => {
-  currentNote = []
-  res.status(200).send("OK")
+  connection.query("TRUNCATE TABLE note", (error) => {
+    if (error) {
+      throw error
+    }
+    res.status(200).send("OK")
+  })
 })
 
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+connection.connect((error) => {
+  if (error) {
+    throw error
+  }
+  connection.query("SELECT 1 + 1 AS solution", function (error) {
+    if (error) {
+      throw error
+    }
+    connection.query("CREATE DATABASE IF NOT EXISTS db", (error) => {
+      if (error) {
+        throw error
+      }
+      connection.query("USE db", (error) => {
+        if (error) {
+          throw error
+        }
+        connection.query(
+          "CREATE TABLE IF NOT EXISTS `note` (`id` INT PRIMARY KEY AUTO_INCREMENT,`note` NVARCHAR(140) NOT NULL);",
+          (error) => {
+            if (error) {
+              throw error
+            }
+            app.listen(port, () => {
+              console.log(`Example app listening at http://localhost:${port}`)
+            })
+          },
+        )
+      })
+    })
+  })
 })
