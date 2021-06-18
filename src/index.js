@@ -5,12 +5,9 @@ const app = express()
 app.use(bodyparser.json())
 const port = 3000
 
-// Keep track of note
-let currentNote = [
-  {
-    id: 1,
-    note: "My First note!",
-  },
+const noteList = [
+  { id: 1, note: "Good day" },
+  { id: 2, note: "second day" },
 ]
 
 // Endpoint
@@ -20,9 +17,8 @@ app.get(
   // Middleware
   (req, res) => {
     const httpCode = 200
-    const responseBody = currentNote
 
-    res.status(httpCode).json(responseBody)
+    res.status(httpCode).json(noteList)
   },
 )
 
@@ -33,14 +29,14 @@ app.get("/notepad/:id", (req, res) => {
   // - If not found, return HTTP Code 404 and "Not Found"
   // - Return HTTP Code 200 and the note if found
   const noteId = parseInt(req.params.id)
-  const foundNote = currentNote.find((note) => {
-    return note.id === noteId
-  })
-  if (!foundNote) {
+
+  const note = noteList.find((ele) => ele.id === noteId)
+  if (note === undefined) {
     res.status(404).send("Not Found")
     return
   }
-  res.status(200).json(foundNote)
+
+  res.status(200).json(note)
 })
 
 app.post("/notepad", (req, res) => {
@@ -56,17 +52,46 @@ app.post("/notepad", (req, res) => {
     res.status(400).send("Missing body property <note>!")
     return
   }
-  if (!(rawJson.note instanceof String)) {
+  if (!(typeof rawJson.note === "string")) {
     res.status(400).send("note property is not string!")
     return
   }
-  const noteObj = {
-    id: Math.floor(Math.random() * 2 ** 31),
+  noteList.push({
+    id: noteList.length + 1,
     note: rawJson.note,
-  }
-  currentNote.push(noteObj)
-
+  })
   res.status(201).send("OK")
+})
+
+// Task 5: Update individual notes
+// Requirement:
+// - HTTP Verb: PUT
+// - Path: /notepad/:id
+// - Body: { "note": "Update" }
+// - Find note with given noteId
+// - If not found, return HTTP Code 404 and "Not Found"
+// - If found, the update note
+// - Return HTTP Code 200 and "OK"
+app.put("/notepad/:id", (req, res) => {
+  const noteId = parseInt(req.params.id)
+  const rawJson = req.body
+  if (!rawJson.note) {
+    res.status(400).send("Missing body property <note>!")
+    return
+  }
+  if (!(typeof rawJson.note === "string")) {
+    res.status(400).send("note property is not string!")
+    return
+  }
+
+  const note = noteList.find((ele) => ele.id === noteId)
+  if (note === undefined) {
+    res.status(404).send("Not Found")
+    return
+  }
+  note.note = rawJson.note
+
+  res.status(200).send("OK")
 })
 
 // Task 3: Delete note from currentNote
@@ -79,17 +104,24 @@ app.post("/notepad", (req, res) => {
 app.delete("/notepad/:id", (req, res) => {
   const noteId = parseInt(req.params.id)
 
-  const foundNote = currentNote.find((note) => {
-    return note.id === noteId
+  let foundIn = -1
+  noteList.forEach((ele, index) => {
+    if (ele.id === noteId) {
+      foundIn = index
+    }
   })
-  if (!foundNote) {
-    res.status(404).send("No such Note!")
+  if (foundIn === -1) {
+    res.status(404).send("Not Found")
     return
   }
 
-  currentNote = currentNote.filter((note) => {
-    return note.id !== noteId
+  noteList.filter((ele) => {
+    if (ele.id === noteId) {
+      return false
+    }
+    return true
   })
+
   res.status(200).send("OK")
 })
 
@@ -99,8 +131,8 @@ app.delete("/notepad/:id", (req, res) => {
 // - Path: /notepad
 // - HTTP Method: DELETE
 // - HTTP Code 200 when currentNote is set to empty list
-app.delete("/notepad/:id", (req, res) => {
-  currentNote = []
+app.delete("/notepad", (req, res) => {
+  noteList = []
   res.status(200).send("OK")
 })
 
