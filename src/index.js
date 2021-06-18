@@ -3,9 +3,9 @@ const bodyparser = require("body-parser")
 const mysql = require("mysql2")
 
 const connection = mysql.createConnection({
-  host: "tmp-mysql-db",
+  host: "temp-mysql",
   user: "root",
-  password: null,
+  password: "datability",
 })
 
 const app = express()
@@ -71,6 +71,44 @@ app.post("/notepad", (req, res) => {
       throw error
     }
     res.status(201).send("OK")
+  })
+})
+
+// Task 5: Update individual notes
+// Requirement:
+// - HTTP Verb: PUT
+// - Path: /notepad/:id
+// - Body: { "note": "Update" }
+// - Find note with given noteId
+// - If not found, return HTTP Code 404 and "Not Found"
+// - If found, the update note
+// - Return HTTP Code 200 and "OK"
+app.put("/notepad/:id", (req, res) => {
+  const noteId = parseInt(req.params.id)
+  const rawJson = req.body
+  if (!rawJson.note) {
+    res.status(400).send("Missing body property <note>!")
+    return
+  }
+  if (!(typeof rawJson.note === "string")) {
+    res.status(400).send("note property is not string!")
+    return
+  }
+
+  connection.query(`SELECT * FROM note WHERE id = ${noteId}`, (error, results) => {
+    if (error) {
+      throw error
+    }
+    if (results.length === 0) {
+      res.status(404).send("Not Found")
+      return
+    }
+    connection.query(`UPDATE note SET note = "${rawJson.note}" WHERE id = ${noteId}`, (error) => {
+      if (error) {
+        throw error
+      }
+      res.status(200).send("OK")
+    })
   })
 })
 
