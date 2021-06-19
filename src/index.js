@@ -8,8 +8,20 @@ app.use(cors())
 const port = 3000
 
 const noteList = [
-  { id: 1, title: "test", note: "Good day", createdAt: new Date().toISOString() },
-  { id: 2, title: "test2", note: "second day", createdAt: new Date().toISOString() },
+  {
+    id: 1,
+    title: "test",
+    note: "Good day long string",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    title: "test2",
+    note: "second day",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 ]
 
 // Endpoint
@@ -75,6 +87,7 @@ app.post("/notepad", (req, res) => {
     title: rawJson.title,
     note: rawJson.note,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   })
   res.status(201).send("OK")
 })
@@ -116,6 +129,7 @@ app.put("/notepad/:id", (req, res) => {
   }
   note.note = rawJson.note
   note.title = rawJson.title
+  note.updatedAt = new Date().toISOString()
 
   res.status(200).send("OK")
 })
