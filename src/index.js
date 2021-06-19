@@ -155,12 +155,15 @@ app.delete("/notepad/:id", (req, res) => {
     return
   }
 
-  noteList.filter((ele) => {
-    if (ele.id === noteId) {
-      return false
+  const noteRemovedList = []
+  let index = 0
+  for (const note of noteList) {
+    if (index !== foundIn) {
+      noteRemovedList.push(note)
     }
-    return true
-  })
+    index += 1
+  }
+  noteList = noteRemovedList
 
   res.status(200).send("OK")
 })
