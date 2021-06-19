@@ -1,13 +1,15 @@
 const express = require("express")
+const cors = require("cors")
 const bodyparser = require("body-parser")
 
 const app = express()
 app.use(bodyparser.json())
+app.use(cors())
 const port = 3000
 
 const noteList = [
-  { id: 1, note: "Good day" },
-  { id: 2, note: "second day" },
+  { id: 1, title: "test", note: "Good day" },
+  { id: 2, title: "test2", note: "second day" },
 ]
 
 // Endpoint
@@ -48,6 +50,8 @@ app.post("/notepad", (req, res) => {
   //   - If missing, return HTTP Code 400 and "note property is not string!"
   // - Then create a new note object and pust in to currentNote variable
   const rawJson = req.body
+
+  // Validate
   if (!rawJson.note) {
     res.status(400).send("Missing body property <note>!")
     return
@@ -56,8 +60,19 @@ app.post("/notepad", (req, res) => {
     res.status(400).send("note property is not string!")
     return
   }
+
+  if (!rawJson.title) {
+    res.status(400).send("Missing body property <title>!")
+    return
+  }
+  if (!(typeof rawJson.title === "string")) {
+    res.status(400).send("title property is not string!")
+    return
+  }
+
   noteList.push({
     id: noteList.length + 1,
+    title: rawJson.title,
     note: rawJson.note,
   })
   res.status(201).send("OK")
@@ -84,12 +99,22 @@ app.put("/notepad/:id", (req, res) => {
     return
   }
 
+  if (!rawJson.title) {
+    res.status(400).send("Missing body property <title>!")
+    return
+  }
+  if (!(typeof rawJson.title === "string")) {
+    res.status(400).send("title property is not string!")
+    return
+  }
+
   const note = noteList.find((ele) => ele.id === noteId)
   if (note === undefined) {
     res.status(404).send("Not Found")
     return
   }
   note.note = rawJson.note
+  note.title = rawJson.title
 
   res.status(200).send("OK")
 })
