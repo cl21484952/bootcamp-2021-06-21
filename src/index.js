@@ -82,14 +82,15 @@ app.post("/notepad", (req, res) => {
     return
   }
 
+  const newNoteId = noteList.length + 1
   noteList.push({
-    id: noteList.length + 1,
+    id: newNoteId,
     title: rawJson.title,
     note: rawJson.note,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   })
-  res.status(201).send("OK")
+  res.status(201).send(newNoteId)
 })
 
 // Task 5: Update individual notes
