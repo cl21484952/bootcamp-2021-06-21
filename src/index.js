@@ -7,7 +7,7 @@ app.use(bodyparser.json())
 app.use(cors())
 const port = 3000
 
-const noteList = [
+let noteList = [
   {
     id: 1,
     title: "test",
