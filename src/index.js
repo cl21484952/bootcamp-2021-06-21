@@ -90,7 +90,7 @@ app.post("/notepad", (req, res) => {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   })
-  res.status(201).send(newNoteId)
+  res.status(201).send("" + newNoteId)
 })
 
 // Task 5: Update individual notes
