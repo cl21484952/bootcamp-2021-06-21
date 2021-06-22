@@ -84,13 +84,13 @@ app.post("/notepad", (req, res) => {
 
   connection.query(
     `INSERT INTO note (note, title, createdAt, updatedAt) VALUES ('${rawJson.note}', '${
-      rawJSON.title
-    }', '${createdAt.toISOString.slice(0, 23)}', '${createdAt.toISOString.slice(0, 23)}')`,
+      rawJson.title
+    }', '${createdAt.toISOString().slice(0, 23)}', '${createdAt.toISOString().slice(0, 23)}')`,
     (error, results) => {
       if (error) {
         throw error
       }
-      res.status(201).send("" + results[0].id)
+      res.status(201).send("" + results.insertId)
     },
   )
 })
@@ -136,7 +136,7 @@ app.put("/notepad/:id", (req, res) => {
       res.status(404).send("Not Found")
       return
     }
-    const updatedAtText = createdAt.toISOString.slice(0, 23)
+    const updatedAtText = createdAt.toISOString().slice(0, 23)
     connection.query(
       `UPDATE note SET note = "${rawJson.note}", title = '${rawJson.title}', updatedAt = '${updatedAtText}' WHERE id = ${noteId}`,
       (error) => {
