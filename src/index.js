@@ -1,5 +1,6 @@
 const express = require("express")
 const bodyparser = require("body-parser")
+const cors = require("cors")
 const mysql = require("mysql2")
 
 const connection = mysql.createConnection({
@@ -10,6 +11,7 @@ const connection = mysql.createConnection({
 
 const app = express()
 app.use(bodyparser.json())
+app.use(cors())
 const port = 3000
 
 // Endpoint
@@ -58,6 +60,8 @@ app.post("/notepad", (req, res) => {
   //   - If missing, return HTTP Code 400 and "note property is not string!"
   // - Then create a new note object and pust in to currentNote variable
   const rawJson = req.body
+
+  // Validate
   if (!rawJson.note) {
     res.status(400).send("Missing body property <note>!")
     return
@@ -66,12 +70,29 @@ app.post("/notepad", (req, res) => {
     res.status(400).send("note property is not string!")
     return
   }
-  connection.query(`INSERT INTO note (note) VALUES ('${rawJson.note}')`, (error, results) => {
-    if (error) {
-      throw error
-    }
-    res.status(201).send("OK")
-  })
+
+  if (!rawJson.title) {
+    res.status(400).send("Missing body property <title>!")
+    return
+  }
+  if (!(typeof rawJson.title === "string")) {
+    res.status(400).send("title property is not string!")
+    return
+  }
+
+  const createdAt = new Date()
+
+  connection.query(
+    `INSERT INTO note (note, title, createdAt, updatedAt) VALUES ('${rawJson.note}', '${
+      rawJSON.title
+    }', '${createdAt.toISOString.slice(0, 23)}', '${createdAt.toISOString.slice(0, 23)}')`,
+    (error, results) => {
+      if (error) {
+        throw error
+      }
+      res.status(201).send("" + results[0].id)
+    },
+  )
 })
 
 // Task 5: Update individual notes
@@ -86,6 +107,8 @@ app.post("/notepad", (req, res) => {
 app.put("/notepad/:id", (req, res) => {
   const noteId = parseInt(req.params.id)
   const rawJson = req.body
+
+  // Validate
   if (!rawJson.note) {
     res.status(400).send("Missing body property <note>!")
     return
@@ -95,6 +118,16 @@ app.put("/notepad/:id", (req, res) => {
     return
   }
 
+  if (!rawJson.title) {
+    res.status(400).send("Missing body property <title>!")
+    return
+  }
+  if (!(typeof rawJson.title === "string")) {
+    res.status(400).send("title property is not string!")
+    return
+  }
+
+  const createdAt = new Date()
   connection.query(`SELECT * FROM note WHERE id = ${noteId}`, (error, results) => {
     if (error) {
       throw error
@@ -103,12 +136,16 @@ app.put("/notepad/:id", (req, res) => {
       res.status(404).send("Not Found")
       return
     }
-    connection.query(`UPDATE note SET note = "${rawJson.note}" WHERE id = ${noteId}`, (error) => {
-      if (error) {
-        throw error
-      }
-      res.status(200).send("OK")
-    })
+    const updatedAtText = createdAt.toISOString.slice(0, 23)
+    connection.query(
+      `UPDATE note SET note = "${rawJson.note}", title = '${rawJson.title}', updatedAt = '${updatedAtText}' WHERE id = ${noteId}`,
+      (error) => {
+        if (error) {
+          throw error
+        }
+        res.status(200).send("OK")
+      },
+    )
   })
 })
 
@@ -154,6 +191,16 @@ app.delete("/notepad/:id", (req, res) => {
   })
 })
 
+const databaseSQL = `
+CREATE TABLE IF NOT EXISTS \`note\` (
+  \`id\` INT NOT NULL AUTO_INCREMENT,
+  \`title\` NVARCHAR(140) NOT NULL,
+  \`note\` NVARCHAR(140) NOT NULL DEFAULT '',
+  \`createdAt\` DATETIME NOT NULL,
+  \`updatedAt\` DATETIME NOT NULL,
+  PRIMARY KEY (\`id\`))
+`
+
 connection.connect((error) => {
   if (error) {
     throw error
@@ -170,17 +217,14 @@ connection.connect((error) => {
         if (error) {
           throw error
         }
-        connection.query(
-          "CREATE TABLE IF NOT EXISTS `note` (`id` INT PRIMARY KEY AUTO_INCREMENT,`note` NVARCHAR(140) NOT NULL);",
-          (error) => {
-            if (error) {
-              throw error
-            }
-            app.listen(port, () => {
-              console.log(`Example app listening at http://localhost:${port}`)
-            })
-          },
-        )
+        connection.query(databaseSQL, (error) => {
+          if (error) {
+            throw error
+          }
+          app.listen(port, () => {
+            console.log(`Example app listening at http://localhost:${port}`)
+          })
+        })
       })
     })
   })
