@@ -4,9 +4,9 @@ const cors = require("cors")
 const mysql = require("mysql2")
 
 const connection = mysql.createConnection({
-  host: "temp-mysql",
-  user: "root",
-  password: "datability",
+  host: "temp-mysql", // Put your AWS RDS URL here
+  user: "admin",
+  password: "datability", // Put your AWS RDS password here
 })
 
 const app = express()
